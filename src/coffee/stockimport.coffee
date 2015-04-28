@@ -224,7 +224,7 @@ class StockImport
         predicate = "sku in (#{skus.join(', ')})"
 
         @client.inventoryEntries
-        .perPage(0)
+        .all()
         .where(predicate)
         .fetch()
         .then (results) =>
