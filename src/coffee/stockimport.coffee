@@ -211,18 +211,22 @@ class StockImport
       Q "#{LOG_PREFIX}elastic.io messages sent."
     else
       Qutils.processList stocks, (stocksToProcess) =>
-        ie = @client.inventoryEntries.perPage(0).whereOperator('or')
         @logger.debug stocksToProcess, 'Stocks to process'
         uniqueStocksToProcessBySku = _.reduce stocksToProcess, (acc, stock) ->
           foundStock = _.find acc, (s) -> s.sku is stock.sku
           acc.push stock unless foundStock
           acc
         , []
-        _.each uniqueStocksToProcessBySku, (s) =>
-          @summary.emptySKU++ if _.isEmpty s.sku
+        skus = _.map uniqueStocksToProcessBySku, (s) =>
+          @_summary.emptySKU++ if _.isEmpty s.sku
           # TODO: query also for channel?
-          ie.where("sku = \"#{s.sku}\"")
-        ie.fetch()
+          "\"#{s.sku}\""
+        predicate = "sku in (#{skus.join(', ')})"
+
+        @client.inventoryEntries
+        .perPage(0)
+        .where(predicate)
+        .fetch()
         .then (results) =>
           @logger.debug results, 'Fetched stocks'
           queriedEntries = results.body.results
