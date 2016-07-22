@@ -10,4 +10,4 @@ ADD bin /usr/commercetools/stock-import/bin
 ADD lib /usr/commercetools/stock-import/lib
 ADD node_modules /usr/commercetools/stock-import/node_modules
 
-CMD [ "/usr/commercetools/stock-import/bin/stock-import" ]
+CMD [ "/usr/commercetools/stock-import/bin/run_stock_import.sh" ]
