@@ -484,6 +484,45 @@ describe 'integration test', ->
         done(_.prettify err)
     , 10000 # 10sec
 
+    it 'CSV - update stock when custom fields is not set on existingEntry', (done) ->
+      raw =
+        """
+        sku,quantityOnStock,restockableInDays,expectedDelivery,supplyChannel
+        another2,77,12,2001-09-11T14:00:00.000Z,#{testChannel2.key}
+        """
+      raw2 =
+        """
+        sku,quantityOnStock,restockableInDays,expectedDelivery,supplyChannel,customType,customField.quantityFactor,customField.color,customField.localizedString.de,customField.localizedString.en
+        another2,72,10,2001-08-11T14:00:00.000Z,#{testChannel2.key},my-type1,12,blue,Schneidder,Josh
+        """
+      @stockimport.run(raw, 'CSV')
+      .then =>
+        @stockimport.summaryReport()
+      .then (message) =>
+        expect(message).toBe 'Summary: there were 1 imported stocks (1 were new and 0 were updates)'
+        @client.inventoryEntries.fetch()
+      .then (result) =>
+        stocks = result.body.results
+        expect(_.size stocks).toBe 1
+        expect(stocks[0].sku).toBe 'another2'
+        expect(stocks[0].quantityOnStock).toBe 77
+        @stockimport.run(raw2, 'CSV')
+      .then => @stockimport.summaryReport()
+      .then (message) =>
+        expect(message).toBe 'Summary: there were 1 imported stocks (0 were new and 1 were updates)'
+        @client.inventoryEntries.fetch()
+      .then (result) ->
+        stocks = result.body.results
+        expect(_.size stocks).toBe 1
+        expect(stocks[0].sku).toBe 'another2'
+        expect(stocks[0].quantityOnStock).toBe 72
+        expect(stocks[0].custom.fields.localizedString.en).toBe 'Josh'
+        expect(stocks[0].custom.fields.color).toBe 'blue'
+        done()
+      .catch (err) ->
+        done(_.prettify err)
+    , 10000 # 10sec
+
     it 'CSV - API should return error if required header is missing', (done) ->
       raw =
         """
